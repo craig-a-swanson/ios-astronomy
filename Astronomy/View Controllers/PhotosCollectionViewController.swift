@@ -70,6 +70,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         var requestURL = URLRequest(url: secureURL!)
         requestURL.httpMethod = "GET"
         
+        let keyExists = cache[photoReference.id] != nil
+        if keyExists {
+            let image = UIImage(data: cache[photoReference.id]!)
+            cell.imageView.image = image
+            return
+        }
+        
         URLSession.shared.dataTask(with: requestURL) { (imageData, _, error) in
             if error != nil {
                 print("Error in retrieving image data: \(error!)")
@@ -80,7 +87,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 print("Bad data in image data result \(error!)")
                 return
             }
-            
+            self.cache.updateValue(data, forKey: photoReference.id)
             let image = UIImage(data: data)
             DispatchQueue.main.async {
                 cell.imageView.image = image
@@ -88,9 +95,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }.resume()
     }
     
-    // Properties
+    // MARK: - Properties
     
     private let client = MarsRoverClient()
+    var cache: [Int:Data] = [:]
     
     private var roverInfo: MarsRover? {
         didSet {
