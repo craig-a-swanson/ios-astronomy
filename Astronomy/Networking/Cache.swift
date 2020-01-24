@@ -16,8 +16,8 @@ class Cache<Key: Hashable, Value> {
         cacheDictionary.updateValue(value, forKey: key)
     }
     
-    func value(for key: Key) -> Value {
-        guard let value = cacheDictionary[key] else { fatalError("No key in cache dictionary") }
-        return value
+    func value(for key: Key) -> Value? {
+        return cacheDictionary[key] ?? nil
     }
 }
+

@@ -64,15 +64,15 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-         let photoReference = photoReferences[indexPath.item]
+        let photoReference = photoReferences[indexPath.item]
         let photoURL = photoReference.imageURL
         let secureURL = photoURL.usingHTTPS
         var requestURL = URLRequest(url: secureURL!)
         requestURL.httpMethod = "GET"
         
-        let keyExists = cache[photoReference.id] != nil
-        if keyExists {
-            let image = UIImage(data: cache[photoReference.id]!)
+        if cache.value(for: photoReference.id) != nil {
+            guard let dataValue = cache.value(for: photoReference.id) else { return }
+            let image = UIImage(data: dataValue)
             cell.imageView.image = image
             return
         }
@@ -87,7 +87,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
                 print("Bad data in image data result \(error!)")
                 return
             }
-            self.cache.updateValue(data, forKey: photoReference.id)
+            self.cache.cache(value: data, key: photoReference.id)
             let image = UIImage(data: data)
             DispatchQueue.main.async {
                 cell.imageView.image = image
@@ -98,8 +98,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Properties
     
     private let client = MarsRoverClient()
-    var cache: [Int:Data] = [:]
-    
+//    var cache: [Int:Data] = [:]
+    var cache = Cache<Int, Data>()
     private var roverInfo: MarsRover? {
         didSet {
             solDescription = roverInfo?.solDescriptions[3]
