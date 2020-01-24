@@ -23,7 +23,6 @@ class Cache<Key: Hashable, Value> {
         return backgroundQueue.sync { () -> Value? in
             return cacheDictionary[key] ?? nil
         }
-//        return cacheDictionary[key] ?? nil
     }
 }
 
