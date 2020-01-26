@@ -64,6 +64,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
+        let fetchedPhotoOperation = FetchPhotoOperation(photoReference: photoReferences[indexPath.item])
         let photoFetchOperation = BlockOperation {
             
         }
@@ -105,6 +106,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     // MARK: - Properties
     
     private let client = MarsRoverClient()
+
     var cache = Cache<Int, Data>()
     private var photoFetchQueue = OperationQueue()
     private var roverInfo: MarsRover? {
