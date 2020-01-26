@@ -41,6 +41,13 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         return cell
     }
     
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let photoReference = photoReferences[indexPath.item]
+        let imageTask = fetchDictionary[photoReference.id]
+        imageTask.cancel()
+        
+    }
+    
     // Make collection view cells fill as much available width as possible
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let flowLayout = collectionViewLayout as! UICollectionViewFlowLayout
@@ -64,43 +71,69 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        let fetchedPhotoOperation = FetchPhotoOperation(photoReference: photoReferences[indexPath.item])
-        let photoFetchOperation = BlockOperation {
-            
-        }
-        
-        
         let photoReference = photoReferences[indexPath.item]
-        let photoURL = photoReference.imageURL
-        let secureURL = photoURL.usingHTTPS
-        var requestURL = URLRequest(url: secureURL!)
-        requestURL.httpMethod = "GET"
-
+        
         if cache.value(for: photoReference.id) != nil {
             guard let dataValue = cache.value(for: photoReference.id) else { return }
             let image = UIImage(data: dataValue)
             cell.imageView.image = image
             return
         }
-
-        URLSession.shared.dataTask(with: requestURL) { (imageData, _, error) in
-            if error != nil {
-                print("Error in retrieving image data: \(error!)")
-                return
-            }
-
-            guard let data = imageData else {
-                print("Bad data in image data result \(error!)")
-                return
-            }
-            self.cache.cache(value: data, key: photoReference.id)
-            let image = UIImage(data: data)
+        
+        let fetchedPhotoOperation = FetchPhotoOperation(photoReference: photoReferences[indexPath.item])
+        fetchedPhotoOperation.photoReference = photoReferences[indexPath.item]
+        // TODO: Update the following line; it is clearly wrong
+        fetchDictionary.updateValue("\(fetchedPhotoOperation.photoReference)", forKey: photoReference.id)
+        print(photoReferences[indexPath.item])
+        
+        let photoFetchOperation = BlockOperation {
+            fetchedPhotoOperation.currentImageTask()
+        }
+        let cacheNewImageData = BlockOperation {
+            guard let imageData = fetchedPhotoOperation.imageData else { return }
+            self.cache.cache(value: imageData, key: photoReference.id)
+        }
+        let checkCellReuse = BlockOperation {
             DispatchQueue.main.async {
                 if cell == self.collectionView.cellForItem(at: indexPath) {
-                cell.imageView.image = image
+                    guard let dataValue = self.cache.value(for: photoReference.id) else { return }
+                    let image = UIImage(data: dataValue)
+                    cell.imageView.image = image
                 }
             }
-        }.resume()
+        }
+        cacheNewImageData.addDependency(photoFetchOperation)
+        checkCellReuse.addDependency(cacheNewImageData)
+        
+        photoFetchQueue.addOperations([photoFetchOperation, cacheNewImageData, checkCellReuse], waitUntilFinished: false)
+        
+        
+        
+        
+        let photoURL = photoReference.imageURL
+        let secureURL = photoURL.usingHTTPS
+        var requestURL = URLRequest(url: secureURL!)
+        requestURL.httpMethod = "GET"
+
+
+//        URLSession.shared.dataTask(with: requestURL) { (imageData, _, error) in
+//            if error != nil {
+//                print("Error in retrieving image data: \(error!)")
+//                return
+//            }
+//
+//            guard let data = imageData else {
+//                print("Bad data in image data result \(error!)")
+//                return
+//            }
+//            self.cache.cache(value: data, key: photoReference.id)
+//            let image = UIImage(data: data)
+//            DispatchQueue.main.async {
+//                if cell == self.collectionView.cellForItem(at: indexPath) {
+//                cell.imageView.image = image
+//                }
+//            }
+//        }.resume()
     }
     
     // MARK: - Properties
@@ -108,6 +141,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     private let client = MarsRoverClient()
 
     var cache = Cache<Int, Data>()
+    var fetchDictionary: [Int:String] = [:]
     private var photoFetchQueue = OperationQueue()
     private var roverInfo: MarsRover? {
         didSet {

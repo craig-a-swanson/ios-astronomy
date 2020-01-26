@@ -78,7 +78,7 @@ class FetchPhotoOperation: ConcurrentOperation {
             state = .isFinished
             return
         }
-        let currentImageFetchTaks = currentImageTask()
+//        let currentImageFetchTask = currentImageTask()
     }
     
         func currentImageTask() {
