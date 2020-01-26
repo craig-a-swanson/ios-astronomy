@@ -35,12 +35,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
-        
-        // self.tableView cellForRowAtIndexPath:indexPath
-//        let currentCell = self.collectionView(collectionView, cellForItemAt: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
-//        if currentCell == cell {
+   
         loadImage(forCell: cell, forItemAt: indexPath)
-//        }
         
         return cell
     }
@@ -97,7 +93,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             self.cache.cache(value: data, key: photoReference.id)
             let image = UIImage(data: data)
             DispatchQueue.main.async {
+                if cell == self.collectionView.cellForItem(at: indexPath) {
                 cell.imageView.image = image
+                }
             }
         }.resume()
     }
