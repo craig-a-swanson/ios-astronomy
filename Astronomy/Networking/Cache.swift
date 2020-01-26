@@ -11,10 +11,10 @@ import Foundation
 class Cache<Key: Hashable, Value> {
     
     private var cacheDictionary: [Key: Value] = [:]
-    let backgroundQueue = DispatchQueue.global(qos: .default)
+    let backgroundQueue = DispatchQueue(label: "Cache Serial Queue")
     
     func cache(value: Value, key: Key) {
-        backgroundQueue.sync {
+        backgroundQueue.async {
             self.cacheDictionary.updateValue(value, forKey: key)
         }
     }

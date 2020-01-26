@@ -107,4 +107,5 @@ class FetchPhotoOperation: ConcurrentOperation {
     // TODO:
     // override cancel()
     // call cancel() on the dataTask
+    // I think I might need to make  the data task a function?
 }

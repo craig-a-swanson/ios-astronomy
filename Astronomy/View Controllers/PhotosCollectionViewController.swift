@@ -36,7 +36,11 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
         
+        // self.tableView cellForRowAtIndexPath:indexPath
+//        let currentCell = self.collectionView(collectionView, cellForItemAt: indexPath) as? ImageCollectionViewCell ?? ImageCollectionViewCell()
+//        if currentCell == cell {
         loadImage(forCell: cell, forItemAt: indexPath)
+//        }
         
         return cell
     }
@@ -64,19 +68,22 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
+        
+        
+        
         let photoReference = photoReferences[indexPath.item]
         let photoURL = photoReference.imageURL
         let secureURL = photoURL.usingHTTPS
         var requestURL = URLRequest(url: secureURL!)
         requestURL.httpMethod = "GET"
-        
+
         if cache.value(for: photoReference.id) != nil {
             guard let dataValue = cache.value(for: photoReference.id) else { return }
             let image = UIImage(data: dataValue)
             cell.imageView.image = image
             return
         }
-        
+
         URLSession.shared.dataTask(with: requestURL) { (imageData, _, error) in
             if error != nil {
                 print("Error in retrieving image data: \(error!)")
@@ -99,6 +106,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private let client = MarsRoverClient()
     var cache = Cache<Int, Data>()
+    private var photoFetchQueue = OperationQueue()
     private var roverInfo: MarsRover? {
         didSet {
             solDescription = roverInfo?.solDescriptions[3]
