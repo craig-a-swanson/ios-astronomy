@@ -78,6 +78,10 @@ class FetchPhotoOperation: ConcurrentOperation {
             state = .isFinished
             return
         }
+        let currentImageFetchTaks = currentImageTask()
+    }
+    
+        func currentImageTask() {
             let photoURL = photoReference.imageURL
             let secureURL = photoURL.usingHTTPS
             var requestURL = URLRequest(url: secureURL!)
@@ -100,6 +104,7 @@ class FetchPhotoOperation: ConcurrentOperation {
         networkTask.resume()
     }
     
+
     override func cancel() {
         
     }

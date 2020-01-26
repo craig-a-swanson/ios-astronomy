@@ -64,7 +64,9 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     
     private func loadImage(forCell cell: ImageCollectionViewCell, forItemAt indexPath: IndexPath) {
         
-        
+        let photoFetchOperation = BlockOperation {
+            
+        }
         
         
         let photoReference = photoReferences[indexPath.item]
