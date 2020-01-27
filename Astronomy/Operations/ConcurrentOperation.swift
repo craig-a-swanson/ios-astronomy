@@ -78,15 +78,12 @@ class FetchPhotoOperation: ConcurrentOperation {
             state = .isFinished
             return
         }
-//        let currentImageFetchTask = currentImageTask()
-    }
-    
-        func currentImageTask() {
-            let photoURL = photoReference.imageURL
-            let secureURL = photoURL.usingHTTPS
-            var requestURL = URLRequest(url: secureURL!)
-            requestURL.httpMethod = "GET"
-            
+        
+        let photoURL = photoReference.imageURL
+        let secureURL = photoURL.usingHTTPS
+        var requestURL = URLRequest(url: secureURL!)
+        requestURL.httpMethod = "GET"
+        
         let networkTask = URLSession.shared.dataTask(with: requestURL) { (data, _, error) in
             defer {
                 self.state = .isFinished
@@ -103,14 +100,8 @@ class FetchPhotoOperation: ConcurrentOperation {
         }
         networkTask.resume()
     }
-    
 
     override func cancel() {
         
     }
-    
-    // TODO:
-    // override cancel()
-    // call cancel() on the dataTask
-    // I think I might need to make  the data task a function?
 }

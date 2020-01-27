@@ -44,7 +44,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
         let photoReference = photoReferences[indexPath.item]
         let imageTask = fetchDictionary[photoReference.id]
-        imageTask.cancel()
+//        imageTask.cancel()
         
     }
     
@@ -73,7 +73,7 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
         let photoReference = photoReferences[indexPath.item]
         
-        if cache.value(for: photoReference.id) != nil {
+        guard cache.value(for: photoReference.id) == nil else {
             guard let dataValue = cache.value(for: photoReference.id) else { return }
             let image = UIImage(data: dataValue)
             cell.imageView.image = image
@@ -81,59 +81,28 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         }
         
         let fetchedPhotoOperation = FetchPhotoOperation(photoReference: photoReferences[indexPath.item])
-        fetchedPhotoOperation.photoReference = photoReferences[indexPath.item]
         // TODO: Update the following line; it is clearly wrong
-        fetchDictionary.updateValue("\(fetchedPhotoOperation.photoReference)", forKey: photoReference.id)
-        print(photoReferences[indexPath.item])
+//        fetchDictionary.updateValue("\(fetchedPhotoOperation.photoReference)", forKey: photoReference.id)
+//        print(photoReferences[indexPath.item])
         
-        let photoFetchOperation = BlockOperation {
-            fetchedPhotoOperation.currentImageTask()
-        }
-        let cacheNewImageData = BlockOperation {
+        let cacheNewImageDataOperation = BlockOperation {
             guard let imageData = fetchedPhotoOperation.imageData else { return }
             self.cache.cache(value: imageData, key: photoReference.id)
         }
-        let checkCellReuse = BlockOperation {
+        let checkCellReuseOperation = BlockOperation {
             DispatchQueue.main.async {
-                if cell == self.collectionView.cellForItem(at: indexPath) {
+                let visibleCell = self.collectionView.indexPathsForVisibleItems
+                guard visibleCell.contains(indexPath) else { return }
                     guard let dataValue = self.cache.value(for: photoReference.id) else { return }
                     let image = UIImage(data: dataValue)
                     cell.imageView.image = image
-                }
             }
         }
-        cacheNewImageData.addDependency(photoFetchOperation)
-        checkCellReuse.addDependency(cacheNewImageData)
+        cacheNewImageDataOperation.addDependency(fetchedPhotoOperation)
+        checkCellReuseOperation.addDependency(cacheNewImageDataOperation)
         
-        photoFetchQueue.addOperations([photoFetchOperation, cacheNewImageData, checkCellReuse], waitUntilFinished: false)
+        photoFetchQueue.addOperations([fetchedPhotoOperation, cacheNewImageDataOperation, checkCellReuseOperation], waitUntilFinished: false)
         
-        
-        
-        
-        let photoURL = photoReference.imageURL
-        let secureURL = photoURL.usingHTTPS
-        var requestURL = URLRequest(url: secureURL!)
-        requestURL.httpMethod = "GET"
-
-
-//        URLSession.shared.dataTask(with: requestURL) { (imageData, _, error) in
-//            if error != nil {
-//                print("Error in retrieving image data: \(error!)")
-//                return
-//            }
-//
-//            guard let data = imageData else {
-//                print("Bad data in image data result \(error!)")
-//                return
-//            }
-//            self.cache.cache(value: data, key: photoReference.id)
-//            let image = UIImage(data: data)
-//            DispatchQueue.main.async {
-//                if cell == self.collectionView.cellForItem(at: indexPath) {
-//                cell.imageView.image = image
-//                }
-//            }
-//        }.resume()
     }
     
     // MARK: - Properties
