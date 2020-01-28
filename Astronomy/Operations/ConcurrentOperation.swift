@@ -62,3 +62,48 @@ class ConcurrentOperation: Operation {
     }
     
 }
+
+// MARK: - FetchPhotoOperation Subclass
+class FetchPhotoOperation: ConcurrentOperation {
+    var photoReference: MarsPhotoReference
+    var imageData: Data?
+    var networkTask: URLSessionTask?
+    
+    init(photoReference: MarsPhotoReference) {
+        self.photoReference = photoReference
+    }
+    
+    override func start() {
+        state = .isExecuting
+        if isCancelled {
+            state = .isFinished
+            return
+        }
+        
+        let photoURL = photoReference.imageURL
+        let secureURL = photoURL.usingHTTPS
+        var requestURL = URLRequest(url: secureURL!)
+        requestURL.httpMethod = "GET"
+        
+        networkTask = URLSession.shared.dataTask(with: requestURL) { (data, _, error) in
+            defer {
+                self.state = .isFinished
+            }
+            if error != nil {
+                print("Error in retrieving image data from fetchPhotoDataTask: \(error!)")
+                return
+            }
+            guard let data = data else {
+                print("Bad data returned in fetchPhotoDataTask: \(error!)")
+                return
+            }
+            self.imageData = data
+        }
+        networkTask!.resume()
+    }
+
+    override func cancel() {
+        networkTask?.cancel()
+        super.cancel()
+    }
+}
