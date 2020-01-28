@@ -67,6 +67,7 @@ class ConcurrentOperation: Operation {
 class FetchPhotoOperation: ConcurrentOperation {
     var photoReference: MarsPhotoReference
     var imageData: Data?
+    var networkTask: URLSessionTask?
     
     init(photoReference: MarsPhotoReference) {
         self.photoReference = photoReference
@@ -84,7 +85,7 @@ class FetchPhotoOperation: ConcurrentOperation {
         var requestURL = URLRequest(url: secureURL!)
         requestURL.httpMethod = "GET"
         
-        let networkTask = URLSession.shared.dataTask(with: requestURL) { (data, _, error) in
+        networkTask = URLSession.shared.dataTask(with: requestURL) { (data, _, error) in
             defer {
                 self.state = .isFinished
             }
@@ -98,10 +99,11 @@ class FetchPhotoOperation: ConcurrentOperation {
             }
             self.imageData = data
         }
-        networkTask.resume()
+        networkTask!.resume()
     }
 
     override func cancel() {
-        
+        networkTask?.cancel()
+        super.cancel()
     }
 }

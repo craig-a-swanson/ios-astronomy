@@ -10,6 +10,37 @@ import UIKit
 
 class PhotosCollectionViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     
+    // MARK: - Properties
+    
+    private let client = MarsRoverClient()
+
+    var cache = Cache<Int, Data>()
+    var fetchDictionary: Dictionary<Int, Operation> = [:]
+    private var photoFetchQueue = OperationQueue()
+    private var roverInfo: MarsRover? {
+        didSet {
+            solDescription = roverInfo?.solDescriptions[33]
+        }
+    }
+    private var solDescription: SolDescription? {
+        didSet {
+            if let rover = roverInfo,
+                let sol = solDescription?.sol {
+                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
+                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
+                    self.photoReferences = photoRefs ?? []
+                }
+            }
+        }
+    }
+    private var photoReferences = [MarsPhotoReference]() {
+        didSet {
+            DispatchQueue.main.async { self.collectionView?.reloadData() }
+        }
+    }
+    
+    @IBOutlet var collectionView: UICollectionView!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -42,9 +73,10 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
     }
     
     func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        
         let photoReference = photoReferences[indexPath.item]
-        let imageTask = fetchDictionary[photoReference.id]
-//        imageTask.cancel()
+        let imageTaskOperation = fetchDictionary[photoReference.id]
+        imageTaskOperation?.cancel()
         
     }
     
@@ -80,10 +112,8 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
             return
         }
         
-        let fetchedPhotoOperation = FetchPhotoOperation(photoReference: photoReferences[indexPath.item])
-        // TODO: Update the following line; it is clearly wrong
-//        fetchDictionary.updateValue("\(fetchedPhotoOperation.photoReference)", forKey: photoReference.id)
-//        print(photoReferences[indexPath.item])
+        let fetchedPhotoOperation = FetchPhotoOperation(photoReference: photoReference)
+        fetchDictionary.updateValue(fetchedPhotoOperation, forKey: photoReference.id)
         
         let cacheNewImageDataOperation = BlockOperation {
             guard let imageData = fetchedPhotoOperation.imageData else { return }
@@ -105,34 +135,5 @@ class PhotosCollectionViewController: UIViewController, UICollectionViewDataSour
         
     }
     
-    // MARK: - Properties
-    
-    private let client = MarsRoverClient()
 
-    var cache = Cache<Int, Data>()
-    var fetchDictionary: [Int:String] = [:]
-    private var photoFetchQueue = OperationQueue()
-    private var roverInfo: MarsRover? {
-        didSet {
-            solDescription = roverInfo?.solDescriptions[3]
-        }
-    }
-    private var solDescription: SolDescription? {
-        didSet {
-            if let rover = roverInfo,
-                let sol = solDescription?.sol {
-                client.fetchPhotos(from: rover, onSol: sol) { (photoRefs, error) in
-                    if let e = error { NSLog("Error fetching photos for \(rover.name) on sol \(sol): \(e)"); return }
-                    self.photoReferences = photoRefs ?? []
-                }
-            }
-        }
-    }
-    private var photoReferences = [MarsPhotoReference]() {
-        didSet {
-            DispatchQueue.main.async { self.collectionView?.reloadData() }
-        }
-    }
-    
-    @IBOutlet var collectionView: UICollectionView!
 }
